@@ -1,81 +1,87 @@
-# Tracking within Images
+# Object Tracking and Optical Flow with OpenCV
 
-## ArUco Markers
+Seven standalone Python demonstrations of interactive object tracking, sparse and dense optical flow, and ArUco marker detection. Start with the bundled videos; webcam examples are optional. These are visual experiments, not a benchmarked tracking system or a calibrated measurement tool.
 
-ArUco markers are binary square fiducial markers that can be easily detected by computer vision systems. Each marker contains a unique ID and is designed to be robust to lighting changes, distortion, and partial occlusion. ArUco markers are widely used in robotics, augmented reality, and camera calibration due to their fast detection and high reliability.
+## Start with a bundled video
 
-In this project, predefined ArUco marker PDFs are provided for printing and use. The script uses a webcam feed to detect these markers in real time and draw bounding boxes and IDs around them.
+Run commands from the repository root, the directory containing `src/`, `assets/`, and `requirements.txt`. The scripts use paths relative to your current working directory, not their own location.
 
-#### Files for Use in Assets Folder
-- aruco_markers_0.pdf
-- aruco_markers_1.pdf
+### 1. Prepare a desktop Python environment
 
-#### Run Script
+Use a Python version with wheels for the pinned packages, such as Python 3.11, and an interactive desktop session. [NumPy 2.2.4 requires Python 3.10 or newer](https://pypi.org/project/numpy/2.2.4/); that minimum does not guarantee support for every newer interpreter or platform.
+
+On macOS/Linux, with Python 3.11 installed:
+
 ```bash
-python src/aruco_markers.py
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install numpy==2.2.4 opencv-contrib-python==4.11.0.86
 ```
 
-To change camera, change the python script number:
-cap = cv2.VideoCapture(0)
+On Windows PowerShell, the equivalent environment setup is:
 
-Press 'q' to close the pop-up window
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install numpy==2.2.4 opencv-contrib-python==4.11.0.86
+```
 
+**Existing dependency-file caveat:** `requirements.txt` lists both `opencv-python==4.11.0.86` and `opencv-contrib-python==4.11.0.86`, plus NumPy. Both OpenCV distributions provide the same `cv2` module. The [OpenCV package maintainers recommend installing only one](https://pypi.org/project/opencv-contrib-python/4.11.0.86/). The commands above deliberately select the full desktop **contrib** package at the repository's existing version; they do not modify `requirements.txt`. Do not additionally install the main or headless wheel into this environment. The tracker script needs `cv2.legacy`, and the interactive examples need OpenCV window support.
 
-## Object Tracking
+Check the imports without opening a camera or window:
 
-Object tracking is the process of locating a specific object in a sequence of video frames and following its movement over time. It is a key technique in computer vision, used in applications like video surveillance, robotics, augmented reality, and activity recognition.
+```bash
+python -c "import cv2, numpy; print('OpenCV:', cv2.__version__, 'NumPy:', numpy.__version__)"
+python -c "import cv2; print(cv2.legacy.TrackerCSRT_create); print(cv2.aruco.ArucoDetector); print(cv2.aruco.estimatePoseSingleMarkers)"
+```
 
-This project allows users to interactively select an object to track from the first frame of a video. Several tracking algorithms from OpenCV are supported, each offering a trade-off between speed and accuracy:
-- **BOOSTING**
-- **CSRT**
-- **KCF**
-- **MIL**
-- **MOSSE**
-- **MEDIANFLOW**
-- **TLD**
+The versions should report `4.11.0` and `2.2.4`. The second command checks representative APIs, not camera access, codecs, or tracking quality. See [troubleshooting](docs/USAGE.md#troubleshooting) if it fails.
 
-After selecting an object, the tracker continuously updates the object's position as it moves through the video. Users are prompted in the terminal to choose both the tracking algorithm and whether to view the tracking live or save the output to an `.mp4` file.
+### 2. Run dense optical flow
 
-#### Files for Use in Assets Folder
-- plane_short.mp4
+```bash
+python src/optical_flow_f.py
+```
 
+Enter `1` at the terminal prompt. The script reads `assets/alligator_short.mp4` and opens a color-coded motion-field window. Focus that window and press **Esc** to stop, or let the clip finish. It does not use your webcam or download a model.
 
-#### Run Script
+Enter `2` instead to write `dense_optical_flow_output.mp4` in the repository root. Existing output at that path can be overwritten. File mode does not show a preview or poll for an Esc key; allow processing to finish. Codec support depends on your OpenCV build.
+
+### 3. Try an object bounding box
+
 ```bash
 python src/object_tracking.py
 ```
 
-After running, a pop-up window will appear. Use your mouse to select the object to track.
+Enter `1` for the **CSRT tracker**, then `1` again for **screen output**. On the first frame of `assets/plane_short.mp4`, drag a rectangle around the object and press **Enter** or **Space**. A green box follows successful tracker updates; a failure message appears when an update fails. Press **Esc** in the playback window to exit. Selecting file output still requires the initial graphical rectangle selection.
 
+## Choose an example
 
-## Optical Flow
+All commands below run from the repository root. There are no command-line options for video paths, cameras, outputs, or calibration; customization currently requires an explicit source edit.
 
-Optical flow is a computer vision technique used to estimate the motion of objects between consecutive frames in a video. It works by analyzing how pixel intensities shift over time, enabling applications like motion tracking, object segmentation, video compression, and scene understanding.
+| Script | Input as committed | Readiness and behavior |
+| --- | --- | --- |
+| [object_tracking.py](src/object_tracking.py) | Bundled `assets/plane_short.mp4` | Interactive rectangle selection; seven legacy tracker choices; screen or file output. |
+| [optical_flow_f.py](src/optical_flow_f.py) | Bundled `assets/alligator_short.mp4` | Dense Farneback flow; screen or file output; simplest no-camera example. |
+| [optical_flow_lk.py](src/optical_flow_lk.py) | Bundled `assets/alligator_short.mp4` | Sparse Lucas-Kanade flow from a fixed feature-detection rectangle; screen or file output. |
+| [optical_flow_lk_blob.py](src/optical_flow_lk_blob.py) | Webcam index `0` | Draw feature-selection regions on a captured first frame; screen output only. |
+| [aruco_markers.py](src/aruco_markers.py) | Webcam index `0` | Detects `DICT_4X4_50` markers; shows IDs and continually overwrites `frame.jpg`. |
+| [aruco_markers_advanced.py](src/aruco_markers_advanced.py) | Webcam index `0` | Experimental marker diagnostics and pose axes; dummy calibration; overwrites `frame.jpg`. |
+| [aruco_markers_AR.py](src/aruco_markers_AR.py) | Webcam index `0` | Experimental pose-based overlays for marker IDs `8` and `9`; dummy calibration; no saved output. |
 
-There are two main approaches demonstrated in this project:
-- **Lucas-Kanade (Sparse) Optical Flow**: Tracks a limited number of strong feature points across frames. It's efficient and useful for following specific moving objects or corners within a scene.
-- **Farneback (Dense) Optical Flow**: Calculates motion vectors for every pixel in the frame, producing a full motion field. This method is useful for visualizing global motion and flow patterns across the entire image.
+The four webcam scripts need a working camera and OS camera permission. The two pose examples need real camera calibration and a correctly measured marker size before their geometry can be treated as a measurement. No calibration file or calibration workflow is supplied. None of the seven scripts loads an external model or references a missing dataset; the bundled-video scripts have complete input paths as committed.
 
-Both implementations prompt the user to choose whether to display the result on screen or save the output to an `.mp4` video file.
+## Included assets and outputs
 
-#### Files for Use in Assets Folder
-- alligator_short.mp4
+- [plane_short.mp4](assets/plane_short.mp4): input for object tracking.
+- [alligator_short.mp4](assets/alligator_short.mp4): input for both video optical-flow scripts.
+- [aruco_markers_0.pdf](assets/aruco_markers_0.pdf) and [aruco_markers_1.pdf](assets/aruco_markers_1.pdf): supplied marker printouts; the Python scripts do not read these PDFs. Verify the detected IDs before trying the AR overlays; PDF filenames are not an AR ID specification.
 
-### Lucas-Kanade (Sparse) Optical Flow
+Generated output paths are `assets/plane_short_<TRACKER>_tracked.mp4`, `optical_flow_output.mp4`, `dense_optical_flow_output.mp4`, and `frame.jpg`. These files may overwrite earlier runs. Webcam snapshots can include people or private surroundings; inspect them before sharing and keep generated captures out of contributions by default.
 
-This script tracks sparse points using the Lucas-Kanade method.
+## Scope and documentation
 
+There is no supplied ground-truth annotation, accuracy evaluation, runtime comparison, automatic object re-detection, or automated runtime test suite. A displayed box, feature track, or pose axis is a visualization, not proof of accuracy or real-time performance. The current sparse-flow and marker-diagnostic limitations are documented without changing their implementation.
 
-#### Run Script
-```bash
-python src/optical_flow_lk.py
-```
-
-### Farneback (Dense) Optical Flow
-
-This script visualizes dense optical flow across the entire frame using the Farneback method.
-
-#### Run Script
-```bash
-python src/optical_flow_f.py
-```
+- [Script-by-script usage and troubleshooting](docs/USAGE.md): prompts, controls, outputs, hard-coded settings, and known limitations.
+- [Contributing](CONTRIBUTING.md): safe checks, useful bug reports, and changes that need separate validation.
